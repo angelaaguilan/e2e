@@ -1,0 +1,55 @@
+#Nombre del workfloww
+name: pruebas e2e
+
+#Condiciones de ejecución (cuando suceda algo)
+on:
+  # por cada pull request a la rama staging
+  pull_request:
+    branches: [staging]
+
+# trabajo o lo que se ejecuta
+jobs:
+  #nombre identificador del job
+  test_e2e:
+    # se genera un ambiente o máquina virtual para levantar las dependencias, en este caso en Ubuntu
+    runs-on: ubuntu-latest
+    # definir los pasos que se van a ejecutar
+    steps:
+      # buscar en https://github.com/marketplace?type=actions
+      # git pull del código -> buscar un checkout
+      - name: Cargar codigo
+        uses: actions/checkout@v7
+      # para pruebas E2E con playwright, primero se instala Node
+      - name: Instalar Node
+        uses: actions/setup-node@v7
+        with:
+          # versión de node
+          node-version: 22
+          # usamos paquete de npm
+          cache: npm
+
+      - name: Instalar dependencias
+        # indicar la dependenncias que se va a instalar
+        run: npm ci
+
+      - name: Instalar mavegadores
+        # instalar los navegadores que se van a utilizar
+        run: npx playwright install --with-deps chromium
+
+      - name: Ejecutar test
+        # comando para ejecutar los test
+        run: npx playwright test
+
+      - name: Obtener Reporte
+        # comandos para obtener los reportes, debe subir el reporte
+        # (si se quiere usar Allure, se debe instalar todas las dependencias y JAVA, pero es mas tiempo instalar JAVA en una máquina virtual)
+        # if es un job para indicar cuándo ejecutar el reporte: always, cancelled, success, failure
+        # buscar este código en: https://docs.github.com/en/actions/reference/workflows-and-actions/contexts
+        if: always()
+        # upload-artifact es para subir cosas
+        uses: actions/upload-artifact@v7
+        with:
+          name: reporte-testing
+          path: playwright-report/
+          # cantidad de días que va a estar el reporte disponible
+          retention-days: 3
